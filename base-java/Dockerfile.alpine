@@ -1,0 +1,7 @@
+ARG JITSI_REPO=jitsi
+ARG BASE_TAG=latest
+FROM ${JITSI_REPO}/base:${BASE_TAG}
+
+RUN mkdir -p /usr/share/man/man1 && \
+    mkdir -p /etc/apt/keyrings/ && \
+    apk --no-cache add nodejs openjdk17-jre-headless openjdk17-jdk
