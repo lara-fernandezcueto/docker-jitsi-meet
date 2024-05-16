@@ -1,0 +1,31 @@
+FROM docker.io/library/alpine:3.19
+
+ARG JITSI_RELEASE=stable
+ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
+
+COPY rootfs /
+
+RUN apk --no-cache add ca-certificates gnupg wget bash
+
+RUN \
+    cpuArch="$(arch)" && \
+    case "${cpuArch}" in \
+        "x86_64") TPL_ARCH=amd64; S6_ARCH=amd64 ;; \
+        *) echo "unsupported architecture '${cpuArch}'"; exit 1 ;; \
+    esac && \
+    wget -qO /usr/bin/tpl https://github.com/jitsi/tpl/releases/download/v1.1.1/tpl-linux-${TPL_ARCH} && \
+    # Workaround S6 bug when /bin is a symlink
+    wget -qO /tmp/s6.tar.gz https://github.com/just-containers/s6-overlay/releases/download/v1.22.1.0/s6-overlay-${S6_ARCH}.tar.gz && \
+    mkdir /tmp/s6 && \
+    tar xfz /tmp/s6.tar.gz -C /tmp/s6 && \
+    tar hxfz /tmp/s6.tar.gz -C / && \
+    rm -f /usr/bin/execlineb && \
+    cp /tmp/s6/bin/execlineb /usr/bin/ && \
+    rm -rf /tmp/s6* && \
+    chmod +x /usr/bin/tpl
+
+RUN if [ "$JITSI_RELEASE" = "unstable" ] ; then \
+      apk --no-cache add jq procps curl vim iputils-ping net-tools ; \
+    fi
+
+ENTRYPOINT [ "/init" ]
