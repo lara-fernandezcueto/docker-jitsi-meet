@@ -1,0 +1,23 @@
+ARG BUILD_TAG=3.19
+
+FROM alpine:${BUILD_TAG}
+ARG JITSI_TAG=7993
+ARG NODE_VERSION=18.20.2
+
+ENV HOME=/root
+RUN apk --no-cache add curl ca-certificates make
+RUN curl -LO https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz
+RUN tar xf node-v${NODE_VERSION}-linux-x64.tar.xz
+RUN install -o root -g wheel node-v${NODE_VERSION}-linux-x64/bin/* /usr/bin/
+RUN install -o root -g wheel node-v${NODE_VERSION}-linux-x64/include/* /usr/include
+RUN install -o root -g wheel node-v${NODE_VERSION}-linux-x64/lib/* /usr/lib/
+RUN install -o root -g wheel node-v${NODE_VERSION}-linux-x64/share/* /usr/share/
+
+RUN adduser -D devel
+USER devel
+RUN cd /home/devel && curl -Lo jitsi-${JITSI_TAG}.tar.gz \
+  https://github.com/jitsi/jitsi-meet/archive/refs/tags/${JITSI_TAG}.tar.gz
+
+RUN cd /home/devel && tar xf jitsi-${JITSI_TAG}.tar.gz
+RUN cd /home/devel/jitsi-meet-${JITSI_TAG} && npm install --legacy-peer-deps
+RUN make -C /home/devel/jitsi-meet-${JITSI_TAG}
