@@ -1,0 +1,109 @@
+ARG JITSI_REPO=jitsi
+ARG BASE_TAG=latest
+
+FROM ${JITSI_REPO}/base:${BASE_TAG} as builder1
+
+RUN apk --no-cache add \
+  make clang17 lua5.4 lua5.4-dev lua5.4-libs readline-dev git unzip wget openssl
+RUN mkdir /tmp/luarocks
+RUN wget -qO - https://luarocks.github.io/luarocks/releases/luarocks-3.8.0.tar.gz | \
+  tar xfz - --strip-components 1 -C /tmp/luarocks
+RUN cd /tmp/luarocks && ./configure && make && make install
+RUN luarocks install basexx 0.4.1-1 && \
+  luarocks install lua-cjson 2.1.0-1 && \
+  luarocks install net-url 0.9-1
+
+FROM ${JITSI_REPO}/base:${BASE_TAG} AS builder2
+RUN apk --no-cache add \
+  autoconf \
+  automake \
+  curl     \
+  db-dev   \
+  clang17  \
+  gzip     \
+  heimdal-dev \
+  libtool  \
+  make  \
+  openldap-dev \
+  openssl-dev \
+  tar \
+  cyrus-sasl \
+  libldap
+
+ARG CYRUS_SASL_VER=2.1.28
+RUN curl -fSL https://github.com/cyrusimap/cyrus-sasl/releases/download/cyrus-sasl-${CYRUS_SASL_VER}/cyrus-sasl-${CYRUS_SASL_VER}.tar.gz -o /tmp/cyrus-sasl.tgz
+RUN mkdir /tmp/cyrus-sasl
+RUN tar xzf /tmp/cyrus-sasl.tgz -C /tmp/cyrus-sasl --strip=1
+RUN cd /tmp/cyrus-sasl && ./configure \
+  --prefix=/usr \
+  --sysconfdir=/etc \
+  --localstatedir=/var \
+  --disable-anon  \
+  --enable-cram \
+  --enable-digest \
+  --enable-ldapdb \
+  --enable-login \
+  --enable-ntlm \
+  --disable-otp \
+  --enable-plain \
+  --with-gss_impl=heimdal \
+  --with-devrandom=/dev/urandom \
+  --with-ldap=/usr \
+  --with-saslauthd=/var/run/saslauthd \
+  --mandir=/usr/share/man
+
+RUN cd /tmp/cyrus-sasl && make -j 1
+
+FROM ${JITSI_REPO}/base:${BASE_TAG}
+
+LABEL org.opencontainers.image.title="Prosody IM"
+LABEL org.opencontainers.image.description="XMPP server used for signalling."
+LABEL org.opencontainers.image.url="https://prosody.im/"
+LABEL org.opencontainers.image.source="https://github.com/jitsi/docker-jitsi-meet"
+LABEL org.opencontainers.image.documentation="https://jitsi.github.io/handbook/"
+
+ARG VERSION_JITSI_CONTRIB_PROSODY_PLUGINS="20240117"
+ARG VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN="1.8.0"
+
+RUN apk --no-cache add \
+  lua5.4 \
+  prosody \
+  libldap \
+  cyrus-sasl \
+  lua5.4-ldap \
+  lua5.4-ossl \
+  lua5.4-sec \
+  lua5.4-unbound
+
+ARG JITSI_VER=7993
+ARG JITSI_REPO=jitsi
+COPY --from=builder2 /tmp/cyrus-sasl/plugins/.libs/libldapdb.so* /usr/lib/sasl2/
+COPY --from=${JITSI_REPO}/jitsi-meet-devel \
+  /home/devel/jitsi-meet-${JITSI_VER}/resources/prosody-plugins/* \
+  /prosody-plugins/
+RUN rm /prosody-plugins/mod_smacks.lua
+RUN rm -rf /etc/prosody
+#RUN mv /usr/share/lua/5.3/inspect.lua /usr/share/lua/5.4/
+RUN rm -rf /usr/lib/lua/5.{1,2,3} && rm -rf /usr/share/lua/5.{1,2,3}
+
+RUN wget -qO /prosody-plugins/mod_auth_cyrus.lua https://hg.prosody.im/prosody-modules/raw-file/65438e4ba563/mod_auth_cyrus/mod_auth_cyrus.lua && \
+    wget -qO /prosody-plugins/sasl_cyrus.lua https://hg.prosody.im/prosody-modules/raw-file/65438e4ba563/mod_auth_cyrus/sasl_cyrus.lua  && \
+    wget https://github.com/matrix-org/prosody-mod-auth-matrix-user-verification/archive/refs/tags/v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz && \
+    tar -xf v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz && \
+    mv prosody-mod-auth-matrix-user-verification-$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN/mod_auth_matrix_user_verification.lua /prosody-plugins && \
+    mv prosody-mod-auth-matrix-user-verification-$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN/mod_matrix_power_sync.lua /prosody-plugins && \
+    rm -rf prosody-mod-auth-matrix-user-verification-$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz && \
+    wget -q https://github.com/jitsi-contrib/prosody-plugins/archive/refs/tags/v$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS.tar.gz && \
+    tar -xf v$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS.tar.gz && \
+    mkdir /prosody-plugins-contrib && \
+    cp -a prosody-plugins-$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS/*  /prosody-plugins-contrib && \
+    rm -rf prosody-plugins-$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS v$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS.tar.gz
+
+COPY rootfs/ /
+
+COPY --from=builder1 /usr/local/lib/lua/5.4 /usr/local/lib/lua/5.4
+COPY --from=builder1 /usr/local/share/lua/5.4 /usr/local/share/lua/5.4
+
+EXPOSE 5222 5280
+
+VOLUME ["/config", "/prosody-plugins-custom"]
