@@ -1,23 +1,78 @@
+# vim: filetype=dockerfile
 ARG BUILD_TAG=3.19
+ARG NODE_VERSION=18
 
-FROM alpine:${BUILD_TAG}
-ARG JITSI_TAG=7993
-ARG NODE_VERSION=18.20.2
+# Base developing image
+FROM node:${NODE_VERSION}-alpine${BUILD_TAG} AS base-devel
 
-ENV HOME=/root
-RUN apk --no-cache add curl ca-certificates make
-RUN curl -LO https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz
-RUN tar xf node-v${NODE_VERSION}-linux-x64.tar.xz
-RUN install -o root -g wheel node-v${NODE_VERSION}-linux-x64/bin/* /usr/bin/
-RUN install -o root -g wheel node-v${NODE_VERSION}-linux-x64/include/* /usr/include
-RUN install -o root -g wheel node-v${NODE_VERSION}-linux-x64/lib/* /usr/lib/
-RUN install -o root -g wheel node-v${NODE_VERSION}-linux-x64/share/* /usr/share/
+RUN apk --no-cache add curl make bash
 
 RUN adduser -D devel
 USER devel
-RUN cd /home/devel && curl -Lo jitsi-${JITSI_TAG}.tar.gz \
+WORKDIR /home/devel
+
+ENTRYPOINT "/bin/sh"
+
+# Base developing Java image
+FROM base-devel AS base-java-devel
+ARG JDK_VERSION=11
+USER root
+
+RUN apk --no-cache add openjdk${JDK_VERSION} maven
+USER devel
+
+# Base apk building image
+FROM base-java-devel AS apk-build
+USER root
+RUN apk --no-cache add alpine-sdk sudo
+RUN addgroup devel abuild
+RUN echo "devel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builders
+USER devel
+RUN install -d -o devel -g devel -m 0700 /home/devel/.ssh
+RUN abuild-keygen -a -i -n
+
+ENTRYPOINT "/usr/bin/abuild" "-r"
+
+# Building jitsi-meet
+FROM base-devel AS jitsi-meet-devel
+ARG JITSI_TAG=7993
+
+RUN curl -Lo jitsi-meet-${JITSI_TAG}.tar.gz \
   https://github.com/jitsi/jitsi-meet/archive/refs/tags/${JITSI_TAG}.tar.gz
 
-RUN cd /home/devel && tar xf jitsi-${JITSI_TAG}.tar.gz
-RUN cd /home/devel/jitsi-meet-${JITSI_TAG} && npm install --legacy-peer-deps
-RUN make -C /home/devel/jitsi-meet-${JITSI_TAG}
+RUN tar -xf jitsi-meet-${JITSI_TAG}.tar.gz
+RUN cd jitsi-meet-${JITSI_TAG} && npm install --legacy-peer-deps
+RUN make -C jitsi-meet-${JITSI_TAG}
+RUN mkdir /home/devel/prosody
+
+# Building jibri
+FROM base-java-devel AS jibri-devel
+ARG JIBRI_TAG=v8.0
+ARG JIBRI_DIR=jibri-8.0
+
+RUN curl -Lo jibri-${JIBRI_TAG}.tar.gz \
+  https://github.com/jitsi/jibri/archive/refs/tags/${JIBRI_TAG}.tar.gz
+
+RUN tar -xf jibri-${JIBRI_TAG}.tar.gz
+RUN cd ${JIBRI_DIR} && mvn install
+
+# Building jicofo
+FROM base-java-devel AS jicofo-devel
+ARG JICOFO_TAG=9457
+ARG JICOFO_DIR=jicofo-stable-jitsi-meet_${JICOFO_TAG}
+
+RUN curl -Lo jicofo-${JICOFO_TAG}.tar.gz \
+  https://github.com/jitsi/jicofo/archive/refs/tags/stable/jitsi-meet_${JICOFO_TAG}.tar.gz
+RUN tar -xf jicofo-${JICOFO_TAG}.tar.gz
+RUN cd ${JICOFO_DIR} && mvn install
+
+# Building jigasi
+FROM base-java-devel AS jigasi-devel
+ARG JIGASI_TAG=v1.1
+ARG JIGASI_DIR=jigasi-1.1
+
+RUN curl -Lo jigasi-${JIGASI_TAG}.tar.gz \
+  https://github.com/jitsi/jigasi/archive/refs/tags/${JIGASI_TAG}.tar.gz
+RUN tar -xf jigasi-${JIGASI_TAG}.tar.gz
+RUN cd ${JIGASI_DIR} && mvn install
+
