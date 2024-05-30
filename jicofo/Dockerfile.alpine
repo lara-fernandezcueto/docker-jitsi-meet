@@ -1,16 +1,33 @@
+# vim: filetype=dockerfile
 ARG JITSI_REPO=jitsi
 ARG BASE_TAG=latest
 FROM ${JITSI_REPO}/base-java:${BASE_TAG}
 
+ARG JITSI_REPO=jitsi
+ARG JICOFO_VERSION=9457
 LABEL org.opencontainers.image.title="Jitsi Conference Focus (jicofo)"
 LABEL org.opencontainers.image.description="Server-side focus component that manages media sessions and acts as load balancer."
 LABEL org.opencontainers.image.url="https://github.com/jitsi/jicofo"
 LABEL org.opencontainers.image.source="https://github.com/jitsi/docker-jitsi-meet"
 LABEL org.opencontainers.image.documentation="https://jitsi.github.io/handbook/"
 
-RUN apt-dpkg-wrap apt-get update && \
-    apt-dpkg-wrap apt-get install -y jicofo && \
-    apt-cleanup
+COPY --from=${JITSI_REPO}/jicofo-devel \
+  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/jicofo/target/dependency/* \
+  /usr/share/jicofo/lib/
+
+COPY --from=${JITSI_REPO}/jicofo-devel \
+  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/lib/logging.properties \
+  /etc/jitsi/jicofo/
+
+COPY --from=${JITSI_REPO}/jicofo-devel \
+  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/jicofo/target/jicofo-1.1-SNAPSHOT.jar \
+  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/resources/jicofo.sh \
+  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/resources/collect-dump-logs.sh \
+   /usr/share/jicofo/
+
+COPY --from=${JITSI_REPO}/jicofo-devel \
+  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/resources/config/jicofo-logrotate.d \
+  /etc/logrotate.d/
 
 COPY rootfs/ /
 

@@ -64,7 +64,11 @@ ARG JICOFO_DIR=jicofo-stable-jitsi-meet_${JICOFO_TAG}
 RUN curl -Lo jicofo-${JICOFO_TAG}.tar.gz \
   https://github.com/jitsi/jicofo/archive/refs/tags/stable/jitsi-meet_${JICOFO_TAG}.tar.gz
 RUN tar -xf jicofo-${JICOFO_TAG}.tar.gz
-RUN cd ${JICOFO_DIR} && mvn install
+RUN cd ${JICOFO_DIR} && mvn -Dmaven.repo.local=/home/devel/.m2/repository \
+  -DskipTests -Dassembly.skipAssembly=true package && \
+  mvn install && \
+  mvn -Dmaven.repo.local=/home/devel/.m2/repository \
+  dependency:copy-dependencies -DincludeScope=runtime
 
 # Building jigasi
 FROM base-java-devel AS jigasi-devel
