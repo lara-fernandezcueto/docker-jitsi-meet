@@ -76,3 +76,11 @@ RUN curl -Lo jigasi-${JIGASI_TAG}.tar.gz \
 RUN tar -xf jigasi-${JIGASI_TAG}.tar.gz
 RUN cd ${JIGASI_DIR} && mvn install
 
+# Building jitsi-autoscaler-sidecar
+FROM base-java-devel AS jitsi-autoscaler-sidecar-devel
+ARG JITSI_AS_FILE=heads/master.zip
+ARG JITSI_AS_DIR=jitsi-autoscaler-sidecar-heads-master
+
+RUN curl -LO https://github.com/jitsi/jitsi-autoscaler-sidecar/archive/${JITSI_AS_FILE}
+RUN unzip $(basename ${JITSI_AS_FILE})
+RUN cd ${JITSI_AS_DIR} && npm install && npm run build

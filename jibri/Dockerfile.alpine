@@ -1,0 +1,83 @@
+ARG JITSI_REPO=jitsi
+ARG BASE_TAG=latest
+FROM ${JITSI_REPO}/base-java:${BASE_TAG}
+
+LABEL org.opencontainers.image.title="Jitsi Broadcasting Infrastructure (jibri)"
+LABEL org.opencontainers.image.description="Components for recording and/or streaming a conference."
+LABEL org.opencontainers.image.url="https://github.com/jitsi/jibri"
+LABEL org.opencontainers.image.source="https://github.com/jitsi/docker-jitsi-meet"
+LABEL org.opencontainers.image.documentation="https://jitsi.github.io/handbook/"
+
+ARG USE_CHROMIUM=0
+#ARG CHROME_RELEASE=latest
+# https://googlechromelabs.github.io/chrome-for-testing/
+ARG CHROME_RELEASE=121.0.6167.85
+
+ARG JITSI_REPO=jitsi
+ARG JIBRI_VER=8.0
+ARG JITSI_UPLOADER_VER=0.20
+
+COPY rootfs/ /
+
+RUN apk --no-cache add \
+  mesa-gl \
+  procps \
+  jq \
+  pulseaudio \
+  dbus \
+  dbus-x11 \
+  rtkit \
+  unzip \
+  chromium \
+  chromium-chromedriver \
+  font-noto
+
+# Install jibri
+COPY --from=${JITSI_REPO}/jibri-devel \
+  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/etc/jitsi/jibri/asoundrc \
+  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/etc/jitsi/jibri/config.json \
+  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/etc/jitsi/jibri/icewm.preferences \
+  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/etc/jitsi/jibri/xorg-video-dummy.conf \
+  /home/devel/jibri-${JIBRI_VER}/lib/logging.properties \
+  /etc/jitsi/jibri/
+
+COPY --from=${JITSI_REPO}/jibri-devel \
+  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/opt/jitsi/jibri/launch.sh \
+  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/opt/jitsi/jibri/graceful_shutdown.sh \
+  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/opt/jitsi/jibri/shutdown.sh \
+  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/opt/jitsi/jibri/collect-dump-logs.sh \
+  /opt/jitsi/jibri/
+
+COPY --from=${JITSI_REPO}/jibri-devel \
+  /home/devel/jibri-${JIBRI_VER}/target/jibri-${JIBRI_VER}-SNAPSHOT.jar /opt/jitsi/jibri
+
+# install jitsi-uploader
+ADD --chmod=0755 \
+  https://raw.githubusercontent.com/jitsi/jitsi-upload-integrations/${JITSI_UPLOADER_VER}/jitsi_uploader.sh \
+  /usr/bin/jitsi_uploader.sh
+ADD --chmod=0755 \
+  https://raw.githubusercontent.com/jitsi/jitsi-upload-integrations/${JITSI_UPLOADER_VER}/dropbox/dropbox_uploader.sh \
+  /usr/bin/dropbox_uploader.sh
+
+# install jitsi-autoscaler-sidecar
+COPY --from=${JITSI_REPO}/jitsi-autoscaler-sidecar-devel \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/dist/* \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/node_modules/* \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/package.json \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/env.example \
+  /usr/share/jitsi-autoscaler-sidecar/
+COPY --from=${JITSI_REPO}/jitsi-autoscaler-sidecar-devel \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/scripts/jwt.sh \
+  /usr/share/jitsi-autoscaler-sidecar/scripts/
+
+RUN adduser -D jibri && adduser jibri rtkit && \
+    dpkgArch="$(arch)" && \
+    case "${dpkgArch##*-}" in \
+        "x86_64") SC_ARCH=x86_64 ;; \
+        "arm64") SC_ARCH=aarch64 ;; \
+        *) echo "unsupported architecture"; exit 1 ;; \
+    esac && \
+    wget -qO /usr/bin/shm-check https://github.com/saghul/shm-check/releases/download/v1.0.0/shm-check-${SC_ARCH} && \
+    chmod +x /usr/bin/shm-check
+
+VOLUME /config
