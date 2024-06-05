@@ -37,25 +37,36 @@ ENTRYPOINT "/usr/bin/abuild" "-r"
 FROM base-devel AS jitsi-meet-devel
 ARG JITSI_TAG=7993
 
-RUN curl -Lo jitsi-meet-${JITSI_TAG}.tar.gz \
-  https://github.com/jitsi/jitsi-meet/archive/refs/tags/${JITSI_TAG}.tar.gz
+ADD --chmod=0644 --chown=devel:devel \
+  https://github.com/jitsi/jitsi-meet/archive/refs/tags/${JITSI_TAG}.tar.gz \
+  /home/devel/jitsi-meet-${JITSI_TAG}.tar.gz
 
 RUN tar -xf jitsi-meet-${JITSI_TAG}.tar.gz
 RUN cd jitsi-meet-${JITSI_TAG} && npm install --legacy-peer-deps
 RUN make -C jitsi-meet-${JITSI_TAG}
-RUN mkdir /home/devel/prosody
+RUN mkdir -p /home/devel/output
+RUN cd /home/devel/jitsi-meet-${JITSI_TAG} && \
+  install-a /home/devel/jitsi-meet-${JITSI_TAG} /home/devel/output
 
 # Building jibri
 FROM base-java-devel AS jibri-devel
 ARG JIBRI_TAG=v8.0
-ARG JIBRI_DIR=jibri-8.0
 
-RUN curl -Lo jibri-${JIBRI_TAG}.tar.gz \
-  https://github.com/jitsi/jibri/archive/refs/tags/${JIBRI_TAG}.tar.gz
+ADD --chmod=0644 --chown=devel:devel \
+  https://github.com/jitsi/jibri/archive/refs/tags/${JIBRI_TAG}.tar.gz \
+  /home/devel/jibri-${JIBRI_TAG}.tar.gz
 
-RUN tar -xf jibri-${JIBRI_TAG}.tar.gz
-RUN cd ${JIBRI_DIR} && mvn install
+RUN mkdir -p /home/devel/jibri-${JIBRI_TAG}
+RUN cd /home/devel/jibri-${JIBRI_TAG} && \
+  tar --strip-components 1 -xf /home/devel/jibri-${JIBRI_TAG}.tar.gz
+ADD --chmod=0755 install-alpine.sh /bin/install-a
+RUN cd /home/devel/jibri-${JIBRI_TAG} && mvn install
+RUN cp /home/devel/jibri-${JIBRI_TAG}/target/jibri-${JIBRI_TAG##v}-SNAPSHOT.jar \
+  /home/devel/jibri-${JIBRI_TAG}/target/jibri.jar
+RUN cd /home/devel/jibri-${JIBRI_TAG} && \
+  install-a /home/devel/jibri-${JIBRI_TAG} /home/devel/output
 
+# TODO: Use the new things here
 # Building jicofo
 FROM base-java-devel AS jicofo-devel
 ARG JICOFO_TAG=9457
@@ -88,3 +99,33 @@ ARG JITSI_AS_DIR=jitsi-autoscaler-sidecar-heads-master
 RUN curl -LO https://github.com/jitsi/jitsi-autoscaler-sidecar/archive/${JITSI_AS_FILE}
 RUN unzip $(basename ${JITSI_AS_FILE})
 RUN cd ${JITSI_AS_DIR} && npm install && npm run build
+
+# Building jitsi-videobridge
+FROM base-java-devel AS jitsi-videobridge-devel
+ARG JITSI_VB_VER=9457
+
+RUN mkdir jitsi-videobridge-${JITSI_VB_VER}
+
+ADD --chown=devel:devel --chmod=644 \
+  https://github.com/jitsi/jitsi-videobridge/archive/refs/tags/stable/jitsi-meet_${JITSI_VB_VER}.tar.gz \
+  /home/devel/jitsi-videobridge-${JITSI_VB_VER}.tar.gz
+
+RUN cd /home/devel/jitsi-videobridge-${JITSI_VB_VER} && \
+  tar -x --strip-components 1 -f /home/devel/jitsi-videobridge-${JITSI_VB_VER}.tar.gz
+RUN cd /home/devel/jitsi-videobridge-${JITSI_VB_VER} && \
+  mvn -Dmaven.repo.local=${HOME}/.m2/repository -DskipTests -Dassembly.skipAssembly=true install && \
+  mvn -Dmaven.repo.local=${HOME}/.m2/repository -DskipTests -Dassembly.skipAssembly=true package && \
+  mvn -Dmaven.repo.local=${HOME}/.m2/repository dependency:copy-dependencies -DincludeScope=runtime
+
+RUN mkdir -p /home/devel/tmp
+RUN cd /home/devel/jitsi-videobridge-${JITSI_VB_VER} && \
+  find . -name target | xargs tar -c -f - | (cd /home/devel/tmp && tar -x -f -)
+
+RUN cp /home/devel/jitsi-videobridge-${JITSI_VB_VER}/config/logrotate \
+  /home/devel/tmp/jitsi-videobridge
+RUN cp /home/devel/jitsi-videobridge-${JITSI_VB_VER}/jvb/target/jitsi-videobridge*.jar \
+  /home/devel/tmp/jitsi-videobridge.jar
+
+RUN mkdir -p /home/devel/output && cd /home/devel/tmp && \
+  /bin/install-a /home/devel/jitsi-videobridge-${JITSI_VB_VER} \
+  /home/devel/output
