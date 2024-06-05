@@ -1,0 +1,46 @@
+ARG JITSI_REPO=jitsi
+ARG BASE_TAG=latest
+FROM ${JITSI_REPO}/base-java:${BASE_TAG}
+
+LABEL org.opencontainers.image.title="Jitsi Gateway to SIP (jigasi)"
+LABEL org.opencontainers.image.description="Server-side application that allows regular SIP clients to join conferences."
+LABEL org.opencontainers.image.url="https://github.com/jitsi/jigasi"
+LABEL org.opencontainers.image.source="https://github.com/jitsi/docker-jitsi-meet"
+LABEL org.opencontainers.image.documentation="https://jitsi.github.io/handbook/"
+
+ENV GOOGLE_APPLICATION_CREDENTIALS /config/key.json
+
+ARG JITSI_REPO=jitsi
+ARG JIGASI_VER=1.1
+
+COPY --from=${JITSI_REPO}/jigasi-devel \
+  /home/devel/jigasi-${JIGASI_VER}/target/jigasi*.jar \
+  /home/devel/jigasi-${JIGASI_VER}/jigasi.sh \
+  /home/devel/jigasi-${JIGASI_VER}/script/collect-dump-logs.sh \
+  /home/devel/jigasi-${JIGASI_VER}/script/graceful_shutdown.sh \
+  /usr/share/jigasi
+RUN ln -s jigasi-{JIGASI_VER}-SNAPSHOT.jar /usr/share/jigasi/jigasi.jar
+
+COPY --from=${JITSI_REPO}/jigasi-devel \
+  /home/devel/jigasi-${JIGASI_VER}/lib/logging.properties \
+  /home/devel/jigasi-${JIGASI_VER}/jigasi-home/sip-communicator.properties \
+  /home/devel/jigasi-${JIGASI_VER}/jigasi-home/callstats-java-sdk.properties \
+  /home/devel/jigasi-${JIGASI_VER}/jigasi-home/log4j2.xml \
+  /etc/jitsi/jigasi
+  
+# install jitsi-autoscaler-sidecar
+COPY --from=${JITSI_REPO}/jitsi-autoscaler-sidecar-devel \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/dist/* \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/node_modules/* \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/package.json \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/env.example \
+  /usr/share/jitsi-autoscaler-sidecar/
+COPY --from=${JITSI_REPO}/jitsi-autoscaler-sidecar-devel \
+  /home/devel/jitsi-autoscaler-sidecar-heads-master/scripts/jwt.sh \
+  /usr/share/jitsi-autoscaler-sidecar/scripts/
+
+RUN apk --no-cache add jq
+
+COPY rootfs/ /
+
+VOLUME ["/config", "/tmp/transcripts"]
