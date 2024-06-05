@@ -12,22 +12,7 @@ LABEL org.opencontainers.image.source="https://github.com/jitsi/docker-jitsi-mee
 LABEL org.opencontainers.image.documentation="https://jitsi.github.io/handbook/"
 
 COPY --from=${JITSI_REPO}/jicofo-devel \
-  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/jicofo/target/dependency/* \
-  /usr/share/jicofo/lib/
-
-COPY --from=${JITSI_REPO}/jicofo-devel \
-  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/lib/logging.properties \
-  /etc/jitsi/jicofo/
-
-COPY --from=${JITSI_REPO}/jicofo-devel \
-  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/jicofo/target/jicofo-1.1-SNAPSHOT.jar \
-  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/resources/jicofo.sh \
-  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/resources/collect-dump-logs.sh \
-   /usr/share/jicofo/
-
-COPY --from=${JITSI_REPO}/jicofo-devel \
-  /home/devel/jicofo-stable-jitsi-meet_${JICOFO_VERSION}/resources/config/jicofo-logrotate.d \
-  /etc/logrotate.d/
+  /home/devel/output/ /
 
 COPY rootfs/ /
 

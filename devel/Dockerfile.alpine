@@ -70,16 +70,26 @@ RUN cd /home/devel/jibri-${JIBRI_TAG} && \
 # Building jicofo
 FROM base-java-devel AS jicofo-devel
 ARG JICOFO_TAG=9457
-ARG JICOFO_DIR=jicofo-stable-jitsi-meet_${JICOFO_TAG}
 
-RUN curl -Lo jicofo-${JICOFO_TAG}.tar.gz \
-  https://github.com/jitsi/jicofo/archive/refs/tags/stable/jitsi-meet_${JICOFO_TAG}.tar.gz
-RUN tar -xf jicofo-${JICOFO_TAG}.tar.gz
-RUN cd ${JICOFO_DIR} && mvn -Dmaven.repo.local=/home/devel/.m2/repository \
-  -DskipTests -Dassembly.skipAssembly=true package && \
+ADD --chown=devel:devel --chmod=0644 \
+  https://github.com/jitsi/jicofo/archive/refs/tags/stable/jitsi-meet_${JICOFO_TAG}.tar.gz \
+  jicofo-${JICOFO_TAG}.tar.gz
+RUN mkdir -p /home/devel/jicofo-${JICOFO_TAG}
+RUN cd /home/devel/jicofo-${JICOFO_TAG} && \
+  tar --strip-components=1 -xf /home/devel/jicofo-${JICOFO_TAG}.tar.gz
+RUN cd /home/devel/jicofo-${JICOFO_TAG} && \
+  mvn -Dmaven.repo.local=/home/devel/.m2/repository \
+    -DskipTests -Dassembly.skipAssembly=true package && \
   mvn install && \
   mvn -Dmaven.repo.local=/home/devel/.m2/repository \
-  dependency:copy-dependencies -DincludeScope=runtime
+    dependency:copy-dependencies -DincludeScope=runtime
+RUN mkdir -p /home/devel/tmp/jicofo
+RUN cp /home/devel/jicofo-${JICOFO_TAG}/jicofo/target/jicofo*-SNAPSHOT.jar \
+  /home/devel/tmp/jicofo.jar
+RUN cp /home/devel/jicofo-${JICOFO_TAG}/resources/config/jicofo-logrotate.d  \
+  /home/devel/tmp/jicofo/jicofo
+RUN cd /home/devel/jicofo-${JICOFO_TAG} && \
+  install-a /home/devel/jicofo-${JICOFO_TAG} /home/devel/output /home/devel/tmp
 
 # Building jigasi
 FROM base-java-devel AS jigasi-devel
