@@ -96,10 +96,29 @@ FROM base-java-devel AS jigasi-devel
 ARG JIGASI_TAG=v1.1
 ARG JIGASI_DIR=jigasi-1.1
 
-RUN curl -Lo jigasi-${JIGASI_TAG}.tar.gz \
-  https://github.com/jitsi/jigasi/archive/refs/tags/${JIGASI_TAG}.tar.gz
-RUN tar -xf jigasi-${JIGASI_TAG}.tar.gz
-RUN cd ${JIGASI_DIR} && mvn install
+ADD --chown=devel:devel --chmod=0644 \
+  https://github.com/jitsi/jigasi/archive/refs/tags/${JIGASI_TAG}.tar.gz \
+  /home/devel/jigasi-${JIGASI_TAG}.tar.gz
+RUN mkdir -p /home/devel/jigasi-${JIGASI_TAG}
+RUN cd /home/devel/jigasi-${JIGASI_TAG} && \
+  tar --strip-components=1 -xf /home/devel/jigasi-${JIGASI_TAG}.tar.gz
+RUN cd /home/devel/jigasi-${JIGASI_TAG} && \
+  mvn -Dmaven.repo.local=/home/devel/.m2/repository \
+    -DskipTests -Dassembly.skipAssembly=true package && \
+  mvn install && \
+  mvn -Dmaven.repo.local=/home/devel/.m2/repository \
+    dependency:copy-dependencies -DincludeScope=runtime
+RUN mkdir -p /home/devel/output/usr/share/jigasi/lib/native/linux-64/
+RUN mkdir -p /home/devel/output/usr/share/jigasi/lib/native/linux/
+RUN mkdir -p /home/devel/tmp/lib/
+RUN cp /home/devel/jigasi-${JIGASI_TAG}/target/dependency/*.jar \
+  /home/devel/tmp/lib/
+RUN cp /home/devel/jigasi-${JIGASI_TAG}/target/jigasi-*-SNAPSHOT.jar \
+  /home/devel/tmp/jigasi.jar
+RUN cp /home/devel/jigasi-${JIGASI_TAG}/script/*.sh \
+  /home/devel/tmp/
+RUN cd /home/devel/jigasi-${JIGASI_TAG} && \
+  install-a /home/devel/jigasi-${JIGASI_TAG} /home/devel/output /home/devel/tmp
 
 # Building jitsi-autoscaler-sidecar
 FROM base-java-devel AS jitsi-autoscaler-sidecar-devel
