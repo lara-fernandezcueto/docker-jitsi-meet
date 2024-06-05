@@ -16,19 +16,16 @@ for ifile in $(find ${SRCDIR}/debian -name "*install") ; do
       continue
     fi
     mkdir -p "${DESTDIR}/${subdir}/${dest}"
-    if [ "$(basename "${orig}")" = "*" ] ; then
-      dir=$(dirname "${orig}")
-      for f in $(find ${SRCDIR}/${dir} ${TMPDIR}/${dir} -type f) ; do
-        cp -a $f ${DESTDIR}/${subdir}/${dest}
-      done
-    else
-      f=$(find ${SRCDIR} ${TMPDIR} -path "*${orig}")
-      if [ "${f}" ] ;then
-        cp -a $f "${DESTDIR}/${subdir}/${dest}"
-      else
-        echo "${orig} not found in ${SRCDIR} ${TMPDIR}" >&2
-        exit 1
-      fi
+    dir=$(dirname "${orig}")
+    name=$(basename "${orig}")
+
+    files=$(find ${SRCDIR}/${dir} ${SRCDIR}/${dir} -name "${name}")
+    if ! [ "${files}" ] ; then
+      echo "${orig} not found in ${SRCDIR} ${TMPDIR}" >&2
+      exit 1
     fi
+    for f in ${files}; do
+      cp -a $f ${DESTDIR}/${subdir}/${dest}
+    done
   done < "${ifile}"
 done
