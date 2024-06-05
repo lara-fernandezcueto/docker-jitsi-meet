@@ -78,10 +78,9 @@ RUN apk --no-cache add \
 ARG JITSI_VER=7993
 ARG JITSI_REPO=jitsi
 COPY --from=builder2 /tmp/cyrus-sasl/plugins/.libs/libldapdb.so* /usr/lib/sasl2/
-COPY --from=${JITSI_REPO}/jitsi-meet-devel \
+COPY --from=${JITSI_REPO}/jitsi-meet-devel --exclude=*/mod_smacks.lua \
   /home/devel/jitsi-meet-${JITSI_VER}/resources/prosody-plugins/* \
   /prosody-plugins/
-RUN rm /prosody-plugins/mod_smacks.lua
 RUN rm -rf /etc/prosody
 #RUN mv /usr/share/lua/5.3/inspect.lua /usr/share/lua/5.4/
 RUN rm -rf /usr/lib/lua/5.{1,2,3} && rm -rf /usr/share/lua/5.{1,2,3}
