@@ -12,7 +12,7 @@ for ifile in $(find ${SRCDIR}/debian -name "*install") ; do
 
   mkdir -p ${DESTDIR}/${subdir}
   while read orig dest ; do
-    if [[ "${orig}" =~ ^#! ]] ; then
+    if [[ "${orig}" =~ ^#! ]] || [ -z "${orig}" ]; then
       continue
     fi
     mkdir -p "${DESTDIR}/${subdir}/${dest}"
