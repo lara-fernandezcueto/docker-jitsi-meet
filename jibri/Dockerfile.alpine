@@ -34,22 +34,7 @@ RUN apk --no-cache add \
 
 # Install jibri
 COPY --from=${JITSI_REPO}/jibri-devel \
-  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/etc/jitsi/jibri/asoundrc \
-  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/etc/jitsi/jibri/config.json \
-  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/etc/jitsi/jibri/icewm.preferences \
-  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/etc/jitsi/jibri/xorg-video-dummy.conf \
-  /home/devel/jibri-${JIBRI_VER}/lib/logging.properties \
-  /etc/jitsi/jibri/
-
-COPY --from=${JITSI_REPO}/jibri-devel \
-  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/opt/jitsi/jibri/launch.sh \
-  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/opt/jitsi/jibri/graceful_shutdown.sh \
-  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/opt/jitsi/jibri/shutdown.sh \
-  /home/devel/jibri-${JIBRI_VER}/resources/debian-package/opt/jitsi/jibri/collect-dump-logs.sh \
-  /opt/jitsi/jibri/
-
-COPY --from=${JITSI_REPO}/jibri-devel \
-  /home/devel/jibri-${JIBRI_VER}/target/jibri-${JIBRI_VER}-SNAPSHOT.jar /opt/jitsi/jibri
+  /home/devel/output/jibri/ /
 
 # install jitsi-uploader
 ADD --chmod=0755 \
@@ -61,14 +46,7 @@ ADD --chmod=0755 \
 
 # install jitsi-autoscaler-sidecar
 COPY --from=${JITSI_REPO}/jitsi-autoscaler-sidecar-devel \
-  /home/devel/jitsi-autoscaler-sidecar-heads-master/dist/* \
-  /home/devel/jitsi-autoscaler-sidecar-heads-master/node_modules/* \
-  /home/devel/jitsi-autoscaler-sidecar-heads-master/package.json \
-  /home/devel/jitsi-autoscaler-sidecar-heads-master/env.example \
-  /usr/share/jitsi-autoscaler-sidecar/
-COPY --from=${JITSI_REPO}/jitsi-autoscaler-sidecar-devel \
-  /home/devel/jitsi-autoscaler-sidecar-heads-master/scripts/jwt.sh \
-  /usr/share/jitsi-autoscaler-sidecar/scripts/
+  /home/devel/output/jitsi-autoscaler-sidecar/ /
 
 RUN adduser -D jibri && adduser jibri rtkit && \
     dpkgArch="$(arch)" && \

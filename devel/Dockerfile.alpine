@@ -19,6 +19,7 @@ ARG JDK_VERSION=11
 USER root
 
 RUN apk --no-cache add openjdk${JDK_VERSION} maven
+ADD --chmod=0755 install-alpine.sh /bin/install-a
 USER devel
 
 # Base apk building image
@@ -59,7 +60,6 @@ ADD --chmod=0644 --chown=devel:devel \
 RUN mkdir -p /home/devel/jibri-${JIBRI_TAG}
 RUN cd /home/devel/jibri-${JIBRI_TAG} && \
   tar --strip-components 1 -xf /home/devel/jibri-${JIBRI_TAG}.tar.gz
-ADD --chmod=0755 install-alpine.sh /bin/install-a
 RUN cd /home/devel/jibri-${JIBRI_TAG} && mvn install
 RUN cp /home/devel/jibri-${JIBRI_TAG}/target/jibri-${JIBRI_TAG##v}-SNAPSHOT.jar \
   /home/devel/jibri-${JIBRI_TAG}/target/jibri.jar
@@ -93,12 +93,18 @@ RUN cd ${JIGASI_DIR} && mvn install
 
 # Building jitsi-autoscaler-sidecar
 FROM base-java-devel AS jitsi-autoscaler-sidecar-devel
-ARG JITSI_AS_FILE=heads/master.zip
-ARG JITSI_AS_DIR=jitsi-autoscaler-sidecar-heads-master
+ARG JITSI_AS_VERS=master
 
-RUN curl -LO https://github.com/jitsi/jitsi-autoscaler-sidecar/archive/${JITSI_AS_FILE}
-RUN unzip $(basename ${JITSI_AS_FILE})
-RUN cd ${JITSI_AS_DIR} && npm install && npm run build
+ADD --chown=devel:devel --chmod=0644 \
+  https://github.com/jitsi/jitsi-autoscaler-sidecar/archive/heads/${JITSI_AS_VERS}.zip \
+  /home/devel/jitsi-autoscaler-sidecar-${JITSI_AS_VERS}.zip
+RUN unzip /home/devel/jitsi-autoscaler-sidecar-${JITSI_AS_VERS}.zip
+RUN mv /home/devel/jitsi-autoscaler-sidecar-heads-${JITSI_AS_VERS} \
+  /home/devel/jitsi-autoscaler-sidecar-${JITSI_AS_VERS}
+RUN cd /home/devel/jitsi-autoscaler-sidecar-${JITSI_AS_VERS} && \
+  npm install && npm run build
+RUN cd /home/devel/jitsi-autoscaler-sidecar-${JITSI_AS_VERS} && \
+  install-a /home/devel/jitsi-autoscaler-sidecar-${JITSI_AS_VERS} /home/devel/output
 
 # Building jitsi-videobridge
 FROM base-java-devel AS jitsi-videobridge-devel
