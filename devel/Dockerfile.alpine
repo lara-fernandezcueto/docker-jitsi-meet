@@ -83,11 +83,11 @@ RUN cd /home/devel/jicofo-${JICOFO_TAG} && \
   mvn install && \
   mvn -Dmaven.repo.local=/home/devel/.m2/repository \
     dependency:copy-dependencies -DincludeScope=runtime
-RUN mkdir -p /home/devel/tmp/jicofo
+RUN mkdir -p /home/devel/tmp/jicofo /home/devel/tmp/jicofo/jicofo
 RUN cp /home/devel/jicofo-${JICOFO_TAG}/jicofo/target/jicofo*-SNAPSHOT.jar \
   /home/devel/tmp/jicofo.jar
 RUN cp /home/devel/jicofo-${JICOFO_TAG}/resources/config/jicofo-logrotate.d  \
-  /home/devel/tmp/jicofo/jicofo
+  /home/devel/tmp/jicofo/jicofo/
 RUN cd /home/devel/jicofo-${JICOFO_TAG} && \
   install-a /home/devel/jicofo-${JICOFO_TAG} /home/devel/output /home/devel/tmp
 
