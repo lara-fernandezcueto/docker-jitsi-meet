@@ -31,7 +31,8 @@ RUN apk --no-cache add \
   libldap
 
 ARG CYRUS_SASL_VER=2.1.28
-RUN curl -fSL https://github.com/cyrusimap/cyrus-sasl/releases/download/cyrus-sasl-${CYRUS_SASL_VER}/cyrus-sasl-${CYRUS_SASL_VER}.tar.gz -o /tmp/cyrus-sasl.tgz
+ADD https://github.com/cyrusimap/cyrus-sasl/releases/download/cyrus-sasl-${CYRUS_SASL_VER}/cyrus-sasl-${CYRUS_SASL_VER}.tar.gz \
+   /tmp/cyrus-sasl.tgz
 RUN mkdir /tmp/cyrus-sasl
 RUN tar xzf /tmp/cyrus-sasl.tgz -C /tmp/cyrus-sasl --strip=1
 RUN cd /tmp/cyrus-sasl && ./configure \
@@ -78,22 +79,28 @@ RUN apk --no-cache add \
 ARG JITSI_VER=7993
 ARG JITSI_REPO=jitsi
 COPY --from=builder2 /tmp/cyrus-sasl/plugins/.libs/libldapdb.so* /usr/lib/sasl2/
-COPY --from=${JITSI_REPO}/jitsi-meet-devel --exclude=*/mod_smacks.lua \
-  /home/devel/jitsi-meet-${JITSI_VER}/resources/prosody-plugins/* \
-  /prosody-plugins/
+COPY --from=${JITSI_REPO}/jitsi-meet-devel \
+  /home/devel/output/jitsi-meet-prosody/  /
+RUN rm /usr/share/jitsi-meet/prosody-plugins/mod_smacks.lua
+RUN ln -s /usr/share/jisi-meet/prosody-plugins /prosody-plugins
+
 RUN rm -rf /etc/prosody
 #RUN mv /usr/share/lua/5.3/inspect.lua /usr/share/lua/5.4/
 RUN rm -rf /usr/lib/lua/5.{1,2,3} && rm -rf /usr/share/lua/5.{1,2,3}
 
-RUN wget -qO /prosody-plugins/mod_auth_cyrus.lua https://hg.prosody.im/prosody-modules/raw-file/65438e4ba563/mod_auth_cyrus/mod_auth_cyrus.lua && \
-    wget -qO /prosody-plugins/sasl_cyrus.lua https://hg.prosody.im/prosody-modules/raw-file/65438e4ba563/mod_auth_cyrus/sasl_cyrus.lua  && \
-    wget https://github.com/matrix-org/prosody-mod-auth-matrix-user-verification/archive/refs/tags/v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz && \
-    tar -xf v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz && \
+ADD https://hg.prosody.im/prosody-modules/raw-file/65438e4ba563/mod_auth_cyrus/mod_auth_cyrus.lua \
+  /prosody-plugins/mod_auth_cyrus.lua
+ADD  https://hg.prosody.im/prosody-modules/raw-file/65438e4ba563/mod_auth_cyrus/sasl_cyrus.lua \
+    /prosody-plugins/sasl_cyrus.lua
+Add https://github.com/matrix-org/prosody-mod-auth-matrix-user-verification/archive/refs/tags/v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz \
+    v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz
+RUN tar -xf v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz && \
     mv prosody-mod-auth-matrix-user-verification-$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN/mod_auth_matrix_user_verification.lua /prosody-plugins && \
     mv prosody-mod-auth-matrix-user-verification-$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN/mod_matrix_power_sync.lua /prosody-plugins && \
-    rm -rf prosody-mod-auth-matrix-user-verification-$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz && \
-    wget -q https://github.com/jitsi-contrib/prosody-plugins/archive/refs/tags/v$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS.tar.gz && \
-    tar -xf v$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS.tar.gz && \
+    rm -rf prosody-mod-auth-matrix-user-verification-$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN v$VERSION_MATRIX_USER_VERIFICATION_SERVICE_PLUGIN.tar.gz
+ADD https://github.com/jitsi-contrib/prosody-plugins/archive/refs/tags/v$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS.tar.gz \
+    v${VERSION_JITSI_CONTRIB_PROSODY_PLUGINS}.tar.gz
+RUN tar -xf v$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS.tar.gz && \
     mkdir /prosody-plugins-contrib && \
     cp -a prosody-plugins-$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS/*  /prosody-plugins-contrib && \
     rm -rf prosody-plugins-$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS v$VERSION_JITSI_CONTRIB_PROSODY_PLUGINS.tar.gz
