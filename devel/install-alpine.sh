@@ -19,7 +19,11 @@ for ifile in $(find ${SRCDIR}/debian -name "*install") ; do
     dir=$(dirname "${orig}")
     name=$(basename "${orig}")
 
-    files=$(find ${SRCDIR}/${dir} ${SRCDIR}/${dir} -name "${name}")
+    if [ -d ${TMPDIR}/${dir} ] ; then
+      files=$(find ${SRCDIR}/${dir} ${TMPDIR}/${dir} -name "${name}")
+    else
+      files=$(find ${SRCDIR}/${dir} -name "${name}")
+    fi
     if ! [ "${files}" ] ; then
       echo "${orig} not found in ${SRCDIR} ${TMPDIR}" >&2
       exit 1
