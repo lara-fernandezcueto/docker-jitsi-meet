@@ -6,6 +6,7 @@ ARG NODE_VERSION=18
 FROM node:${NODE_VERSION}-alpine${BUILD_TAG} AS base-devel
 
 RUN apk --no-cache add curl make bash
+ADD --chmod=0755 install-alpine.sh /bin/install-a
 
 RUN adduser -D devel
 USER devel
@@ -19,7 +20,6 @@ ARG JDK_VERSION=11
 USER root
 
 RUN apk --no-cache add openjdk${JDK_VERSION} maven
-ADD --chmod=0755 install-alpine.sh /bin/install-a
 USER devel
 
 # Base apk building image
