@@ -28,7 +28,7 @@ jobs:
             jitsi/base:${{inputs.base_os}}
           build-args: |
             JITSI_RELEASE=unstable
-          cache-to: type=gha
+          cache-to: type=local,dest=cache/
 
       - name: Build base-java
         uses: docker/build-push-action@v2
@@ -40,13 +40,13 @@ jobs:
           load: true
           tags: |
             jitsi/base-java:${{inputs.base_os}}
-          cache-to: type=gha
+          cache-to: type=local,dest=cache/
 
-          #      - name: Cache bases
-          #        id: container-cache
-          #        uses: actions/cache/save@v4
-          #        with:
-          #          path: cache/
+      - name: Cache bases
+        id: container-cache
+        uses: actions/cache/save@v4
+        with:
+          path: cache/
 
   build-containers:
     strategy:
@@ -61,11 +61,15 @@ jobs:
     needs: build-bases
     runs-on: ubuntu-latest
     steps:
-      #      - name: Restore cache
-      #        id: container-cache
-      #        uses: actions/cache/restore@v4
-      #        with:
-      #          path: cache/
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
+      - name: Restore cache
+        id: container-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: cache/
 
       - name: Build ${{matrix.service}}
         uses: docker/build-push-action@v2
@@ -77,5 +81,5 @@ jobs:
           load: true
           tags: |
             jitsi/${{matrix.service}}:${{inputs.base_os}}
-          cache-from: type=gha
+          cache-from: type=local,src=cache/
 
