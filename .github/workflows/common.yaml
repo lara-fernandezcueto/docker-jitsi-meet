@@ -23,8 +23,7 @@ jobs:
         env:
           BASE_OS: ${{inputs.base_os}}
         with:
-          context: ./base
-          file: {context}/Dokerfile.${{inputs.base_os}}
+          file: ./base/Dokerfile.${{inputs.base_os}}
           load: true
           tags: |
             jitsi/base:${{inputs.base_os}}
@@ -36,8 +35,7 @@ jobs:
         env:
           BASE_OS: ${{inputs.base_os}}
         with:
-          context: ./base-java
-          file: {context}/Dokerfile.${{inputs.base_os}}
+          file: ./base-java/Dokerfile.${{inputs.base_os}}
           load: true
           tags: |
             jitsi/base-java:${{inputs.base_os}}
@@ -47,8 +45,7 @@ jobs:
         env:
           BASE_OS: ${{inputs.base_os}}
         with:
-          context: ./jibri
-          file: {context}/Dokerfile.${{inputs.base_os}}
+          file: ./jibri/Dokerfile.${{inputs.base_os}}
           load: true
           tags: |
             jitsi/jibri:${{inputs.base_os}}
@@ -58,8 +55,7 @@ jobs:
         env:
           BASE_OS: ${{inputs.base_os}}
         with:
-          context: ./jicofo
-          file: {context}/Dokerfile.${{inputs.base_os}}
+          file: ./jicofo/Dokerfile.${{inputs.base_os}}
           load: true
           tags: |
             jitsi/jicofo:${{inputs.base_os}}
@@ -69,8 +65,7 @@ jobs:
         env:
           BASE_OS: ${{inputs.base_os}}
         with:
-          context: ./jigasi
-          file: {context}/Dokerfile.${{inputs.base_os}}
+          file: ./jigasi/Dokerfile.${{inputs.base_os}}
           load: true
           tags: |
             jitsi/jigasi:${{inputs.base_os}}
@@ -80,8 +75,7 @@ jobs:
         env:
           BASE_OS: ${{inputs.base_os}}
         with:
-          context: ./jvb
-          file: {context}/Dokerfile.${{inputs.base_os}}
+          file: ./jvb/Dokerfile.${{inputs.base_os}}
           load: true
           tags: |
             jitsi/jvb:${{inputs.base_os}}
@@ -91,8 +85,7 @@ jobs:
         env:
           BASE_OS: ${{inputs.base_os}}
         with:
-          context: ./prosody
-          file: {context}/Dokerfile.${{inputs.base_os}}
+          file: ./prosody/Dokerfile.${{inputs.base_os}}
           load: true
           tags: |
             jitsi/prosody:${{inputs.base_os}}
@@ -102,8 +95,7 @@ jobs:
         env:
           BASE_OS: ${{inputs.base_os}}
         with:
-          context: ./web
-          file: {context}/Dokerfile.${{inputs.base_os}}
+          file: ./web/Dokerfile.${{inputs.base_os}}
           load: true
           tags: |
             jitsi/web:${{inputs.base_os}}
