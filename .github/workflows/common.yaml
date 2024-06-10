@@ -41,6 +41,7 @@ jobs:
           tags: |
             jitsi/base-java:${{inputs.base_os}}
           cache-to: type=local,dest=cache/
+          cache-from: type=local,src=cache/
 
       - name: Cache bases
         id: container-cache
@@ -81,5 +82,6 @@ jobs:
           load: true
           tags: |
             jitsi/${{matrix.service}}:${{inputs.base_os}}
+          cache-to: type=local,dest=cache/
           cache-from: type=local,src=cache/
 
