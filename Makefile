@@ -3,6 +3,8 @@ JITSI_RELEASE ?= stable
 JITSI_BUILD ?= unstable
 JITSI_REPO ?= jitsi
 
+BASE_OS ?= debian
+
 JITSI_SERVICES := base base-java web prosody jicofo jvb jigasi jibri
 
 BUILD_ARGS := \
@@ -13,6 +15,13 @@ ifeq ($(FORCE_REBUILD), 1)
   BUILD_ARGS := $(BUILD_ARGS) --no-cache
 endif
 
+ifeq ($(BASE_OS), alpine)
+.PHONY:	devel
+devel:
+	$(MAKE) -C devel
+
+build: devel
+endif
 
 all: build-all
 
@@ -27,7 +36,7 @@ buildx:
 		--pull --push \
 		--tag $(JITSI_REPO)/$(JITSI_SERVICE):$(JITSI_BUILD) \
 		--tag $(JITSI_REPO)/$(JITSI_SERVICE):$(JITSI_RELEASE) \
-		$(JITSI_SERVICE)
+		--file $(JITSI_SERVICE)/Dockerfile.$(BASE_OS)
 
 $(addprefix buildx_,$(JITSI_SERVICES)):
 	$(MAKE) --no-print-directory JITSI_SERVICE=$(patsubst buildx_%,%,$@) buildx
@@ -37,7 +46,7 @@ build:
 		$(BUILD_ARGS) \
 		--progress plain \
 		--tag $(JITSI_REPO)/$(JITSI_SERVICE) \
-		$(JITSI_SERVICE)
+		--file $(JITSI_SERVICE)/Dockerfile.$(BASE_OS)
 
 $(addprefix build_,$(JITSI_SERVICES)):
 	$(MAKE) --no-print-directory JITSI_SERVICE=$(patsubst build_%,%,$@) build
