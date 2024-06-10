@@ -51,6 +51,7 @@ jobs:
           - prosody
           - web
     needs: build-bases
+    runs-on: ubuntu-latest
     steps:
       - name: Build ${{matrix.service}}
         uses: docker/build-push-action@v2
