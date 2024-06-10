@@ -14,7 +14,7 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
-          driver: docker-container
+          driver: docker
 
       - name: Build base
         uses: docker/build-push-action@v2
@@ -43,12 +43,6 @@ jobs:
           tags: |
             jitsi/base-java:${{inputs.base_os}}
 
-      - name: Cache bases
-        id: container-cache
-        uses: actions/cache/save@v4
-        with:
-          path: cache/
-
   build-containers:
     strategy:
       matrix:
@@ -66,12 +60,6 @@ jobs:
         uses: docker/setup-buildx-action@v2
         with:
           driver: docker-container
-      - name: Restore cache
-        id: container-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: cache/
-
       - name: Build ${{matrix.service}}
         uses: docker/build-push-action@v2
         env:
