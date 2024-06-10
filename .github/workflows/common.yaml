@@ -1,10 +1,9 @@
-name: CI Test Build
-
 on:
-  pull_request:
-  push:
-    branches:
-    - master
+  workflow_call:
+    inputs:
+      base_os:
+        required: true
+        type: string
 
 jobs:
   build:
@@ -14,71 +13,89 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
+        env:
+          BASE_OS: ${inputs.base_os}
         with:
           driver: docker
 
       - name: Build base
         uses: docker/build-push-action@v2
+        env:
+          BASE_OS: ${inputs.base_os}
         with:
           context: ./base
           load: true
           tags: |
-            jitsi/base:latest
+            jitsi/base:${inputs.base_os}
           build-args: |
             JITSI_RELEASE=unstable
 
       - name: Build base-java
         uses: docker/build-push-action@v2
+        env:
+          BASE_OS: ${inputs.base_os}
         with:
           context: ./base-java
           load: true
           tags: |
-            jitsi/base-java:latest
+            jitsi/base-java:${inputs.base_os}
 
       - name: Build jibri
         uses: docker/build-push-action@v2
+        env:
+          BASE_OS: ${inputs.base_os}
         with:
           context: ./jibri
           load: true
           tags: |
-            jitsi/jibri:latest
+            jitsi/jibri:${inputs.base_os}
 
       - name: Build jicofo
         uses: docker/build-push-action@v2
+        env:
+          BASE_OS: ${inputs.base_os}
         with:
           context: ./jicofo
           load: true
           tags: |
-            jitsi/jicofo:latest
+            jitsi/jicofo:${inputs.base_os}
 
       - name: Build jigasi
         uses: docker/build-push-action@v2
+        env:
+          BASE_OS: ${inputs.base_os}
         with:
           context: ./jigasi
           load: true
           tags: |
-            jitsi/jigasi:latest
+            jitsi/jigasi:${inputs.base_os}
 
       - name: Build jvb
         uses: docker/build-push-action@v2
+        env:
+          BASE_OS: ${inputs.base_os}
         with:
           context: ./jvb
           load: true
           tags: |
-            jitsi/jvb:latest
+            jitsi/jvb:${inputs.base_os}
 
       - name: Build prosody
         uses: docker/build-push-action@v2
+        env:
+          BASE_OS: ${inputs.base_os}
         with:
           context: ./prosody
           load: true
           tags: |
-            jitsi/prosody:latest
+            jitsi/prosody:${inputs.base_os}
 
       - name: Build web
         uses: docker/build-push-action@v2
+        env:
+          BASE_OS: ${inputs.base_os}
         with:
           context: ./web
           load: true
           tags: |
-            jitsi/web:latest
+            jitsi/web:${inputs.base_os}
