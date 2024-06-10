@@ -24,6 +24,8 @@ jobs:
           context: ./base
           file: ./base/Dockerfile.${{inputs.base_os}}
           load: true
+          build-args:
+            - BASE_TAG: ${{inputs.base_os}}
           tags: |
             jitsi/base:${{inputs.base_os}}
           build-args: |
@@ -38,6 +40,8 @@ jobs:
           context: ./base-java
           file: ./base-java/Dockerfile.${{inputs.base_os}}
           load: true
+          build-args:
+            - BASE_TAG: ${{inputs.base_os}}
           tags: |
             jitsi/base-java:${{inputs.base_os}}
           cache-to: type=local,dest=cache/
@@ -80,6 +84,8 @@ jobs:
           context: ./${{matrix.service}}
           file: ./${{matrix.service}}/Dockerfile.${{inputs.base_os}}
           load: true
+          build-args:
+            - BASE_TAG: ${{inputs.base_os}}
           tags: |
             jitsi/${{matrix.service}}:${{inputs.base_os}}
           cache-to: type=local,dest=cache/
