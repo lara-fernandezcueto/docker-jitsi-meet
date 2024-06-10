@@ -26,10 +26,9 @@ jobs:
           load: true
           build-args:
             - BASE_TAG=${{inputs.base_os}}
+            - JITSI_RELEASE=unstable
           tags: |
             jitsi/base:${{inputs.base_os}}
-          build-args: |
-            JITSI_RELEASE=unstable
           cache-to: type=local,dest=cache/
 
       - name: Build base-java
