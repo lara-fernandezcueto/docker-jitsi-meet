@@ -24,6 +24,7 @@ jobs:
           context: ./base
           file: ./base/Dockerfile.${{inputs.base_os}}
           load: true
+          cache-to: type=gha,key=jitsi-base-${{inputs.base_os}}
           tags: |
             jitsi/base:${{inputs.base_os}}
           build-args: |
@@ -38,6 +39,7 @@ jobs:
           context: ./base-java
           file: ./base-java/Dockerfile.${{inputs.base_os}}
           load: true
+          cache-from: type=gha,key=jitsi-base-${{inputs.base_os}}
           build-args: |
             BASE_TAG=${{inputs.base_os}}
           tags: |
