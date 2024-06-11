@@ -1,0 +1,13 @@
+name: CI Test Build (alpine)
+
+on:
+  pull_request:
+  push:
+    branches:
+    - master
+
+jobs:
+  build:
+    uses: ./.github/workflows/common.yaml
+    with:
+      base_os: alpine
