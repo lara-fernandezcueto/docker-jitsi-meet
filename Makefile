@@ -9,11 +9,14 @@ JITSI_SERVICES := base base-java web prosody jicofo jvb jigasi jibri
 
 BUILD_ARGS := \
 	--build-arg JITSI_REPO=$(JITSI_REPO) \
+	--build-arg BASE_TAG=$(JITSI_BUILD) \
 	--build-arg JITSI_RELEASE=$(JITSI_RELEASE)
 
 ifeq ($(FORCE_REBUILD), 1)
   BUILD_ARGS := $(BUILD_ARGS) --no-cache
 endif
+
+all: build-all
 
 ifeq ($(BASE_OS), alpine)
 .PHONY:	devel
@@ -22,8 +25,6 @@ devel:
 
 build: devel
 endif
-
-all: build-all
 
 release:
 	@$(foreach SERVICE, $(JITSI_SERVICES), $(MAKE) --no-print-directory JITSI_SERVICE=$(SERVICE) buildx;)
@@ -45,7 +46,7 @@ build:
 	docker build \
 		$(BUILD_ARGS) \
 		--progress plain \
-		--tag $(JITSI_REPO)/$(JITSI_SERVICE) \
+		--tag $(JITSI_REPO)/$(JITSI_SERVICE):$(JITSI_BUILD) \
 		--file $(JITSI_SERVICE)/Dockerfile.$(BASE_OS)
 
 $(addprefix build_,$(JITSI_SERVICES)):
